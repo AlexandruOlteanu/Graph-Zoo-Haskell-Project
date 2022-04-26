@@ -31,7 +31,8 @@ fromComponents :: Ord a
                => [a]              -- lista nodurilor
                -> [(a, a)]         -- lista arcelor
                -> StandardGraph a  -- graful construit
-fromComponents ns es = undefined
+fromComponents ns es = 
+                (S.fromList ns, S.fromList es) 
 
 {-
     *** TODO ***
@@ -39,7 +40,8 @@ fromComponents ns es = undefined
     Mulțimea nodurilor grafului.
 -}
 nodes :: StandardGraph a -> S.Set a
-nodes = undefined
+nodes = \a -> (fst a)
+
 
 {-
     *** TODO ***
@@ -47,7 +49,7 @@ nodes = undefined
     Mulțimea arcelor grafului.
 -}
 edges :: StandardGraph a -> S.Set (a, a)
-edges = undefined
+edges = \a -> (snd a)
 
 {-
     Exemple de grafuri
@@ -78,7 +80,9 @@ shouldBeTrue = graph1 == graph2
     fromList [2,3,4]
 -}
 outNeighbors :: Ord a => a -> StandardGraph a -> S.Set a
-outNeighbors node graph = undefined
+outNeighbors node graph = S.fromList (foldl (\ans x -> (if (fst x) == node then 
+                                                            ((snd x) : ans)
+                                                        else ans)) [] (edges graph))
 
 {-
     *** TODO ***
@@ -91,7 +95,9 @@ outNeighbors node graph = undefined
     fromList [4]
 -}
 inNeighbors :: Ord a => a -> StandardGraph a -> S.Set a
-inNeighbors node graph = undefined
+inNeighbors node graph = S.fromList (foldl (\ans x -> (if (snd x) == node then 
+                                                            ((fst x) : ans)
+                                                        else ans)) [] (edges graph))
 
 {-
     *** TODO ***
@@ -105,7 +111,16 @@ inNeighbors node graph = undefined
     (fromList [2,3,4],fromList [(2,3)])
 -}
 removeNode :: Ord a => a -> StandardGraph a -> StandardGraph a
-removeNode node graph = undefined
+removeNode node graph = fromComponents (foldl (\ans x -> (if x == node then 
+                                                            ans 
+                                                          else 
+                                                              (x : ans)
+                                                )) [] (nodes graph))
+                                        (foldl (\ans x -> (if ((fst x) == node || (snd x) == node) then 
+                                                            ans 
+                                                           else 
+                                                               (x : ans)
+                                                            )) [] (edges graph))
 
 {-
     *** TODO ***
@@ -124,8 +139,20 @@ splitNode :: Ord a
           -> [a]              -- nodurile cu care este înlocuit
           -> StandardGraph a  -- graful existent
           -> StandardGraph a  -- graful obținut
-splitNode old news graph = undefined
+splitNode old new graph = (fromComponents new_nodes final_list_f)
 
+                         where
+                            new_graph = removeNode old graph 
+                            new_nodes = (foldl (\ans x -> (x : ans)) (S.toList (nodes new_graph)) new)
+                            new_edges = (S.toList (edges new_graph))
+                            edge_list_out = (map (\x -> 
+                                             (foldl (\res y -> [(x, y)] ++ res) [] (outNeighbors old graph))
+                                        ) new)
+                            edge_list_in = (map (\x -> 
+                                             (foldl (\res y -> [(y, x)] ++ res) [] (inNeighbors old graph))
+                                        ) new)
+                            final_list = (foldl (\ans x -> (x ++ ans)) new_edges edge_list_out)
+                            final_list_f = (foldl (\ans x -> (x ++ ans)) final_list edge_list_in)
 {-
     *** TODO ***
 
@@ -143,4 +170,15 @@ mergeNodes :: Ord a
            -> a                -- noul nod
            -> StandardGraph a  -- graful existent
            -> StandardGraph a  -- graful obținut
-mergeNodes prop node graph = undefined
+mergeNodes prop node graph = (fromComponents new_nodes new_edges)
+                            where 
+                                initial_nodes = (nodes graph)
+
+                                new_graph = (foldl (\ans x -> (if prop x then 
+                                                                (splitNode x [node] ans)
+                                                               else 
+                                                                ans)) graph initial_nodes)
+
+                                new_edges = S.toList (edges new_graph)
+
+                                new_nodes = S.toList (nodes new_graph)

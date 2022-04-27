@@ -3,6 +3,10 @@ module Algorithms where
 import qualified Data.Set as S
 import StandardGraph
 
+
+testGraph132 :: StandardGraph Int
+testGraph132 = fromComponents [1, 2, 3, 4] [(1, 2), (1, 3)]
+
 {-
     În etapa 1, prin graf înțelegem un graf cu reprezentare standard.
     În etapele următoare, vom experimenta și cu altă reprezentare.
@@ -26,12 +30,64 @@ type Graph a = StandardGraph a
     Hint: Scrieți o funcție auxiliară care primește ca parametru suplimentar
     o mulțime (set) care reține nodurile vizitate până în momentul curent.
 -}
+
+f1 :: Ord a
+          => [a]                -- nodul divizat
+          -> [a]              -- nodurile cu care este înlocuit
+          -> Graph a  -- graful obținut
+          -> ([a], [a])
+f1 = \l1 l2 graph ->
+            let 
+                node1 = (last l1)
+                new_l2 = (if elem node1 l2 then 
+                            l2
+                          else 
+                            (l2 ++ [node1]))
+                new_l1 = (take ((length l1) - 1) l1)
+                new_l1_1 = (new_l1 ++ (foldl (\ans x -> 
+                                            if elem x l2 then 
+                                                ans  
+                                            else     
+                                                (x : ans) 
+                    ) [] (outNeighbors node1 graph)))
+            in (new_l1_1, new_l2)
+
+f2 :: Ord a
+          => [a]                -- nodul divizat
+          -> [a]              -- nodurile cu care este înlocuit
+          -> Graph a  -- graful obținut
+          -> ([a], [a])
+f2 = \l1 l2 graph ->
+            let
+                node1 = (head l1)
+                new_l2 = (if elem node1 l2 then 
+                            l2
+                          else 
+                            (l2 ++ [node1]))
+                new_l1 = (tail l1)
+                new_l1_1 = (new_l1 ++ (foldl (\ans x -> 
+                                            if elem x l2 then 
+                                                ans  
+                                            else     
+                                                (ans ++ [x]) 
+                    ) [] (outNeighbors node1 graph)))
+            in (new_l1_1, new_l2)
+            
 search :: Ord a
-       => ([a] -> [a] -> [a])  -- funcția de îmbinare a listelor de noduri
-       -> a                    -- nodul de pornire
+       => ([a] -> [a] -> Graph a -> ([a], [a]))  -- funcția de îmbinare a listelor de noduri
+       -> [a]
+       -> [a]                    -- nodul de pornire
        -> Graph a              -- graful
        -> [a]                  -- lista obținută în urma parcurgerii
-search f node graph = undefined
+search f current_list final_list graph = 
+    if null current_list then 
+        final_list
+    else
+        (search f new_current_list new_final_list graph)
+        where 
+            result = (f current_list final_list graph)
+            new_current_list = (fst result)
+            new_final_list = (snd result)
 
 {-
     *** TODO ***
@@ -47,7 +103,7 @@ search f node graph = undefined
     [4,1,2,3]
 -}
 bfs :: Ord a => a -> Graph a -> [a]
-bfs = undefined
+bfs = (\node graph -> (search f2 [node] [] graph)) 
 
 {-
     *** TODO ***
@@ -63,7 +119,7 @@ bfs = undefined
     [4,1,2,3]
 -}
 dfs :: Ord a => a -> Graph a -> [a]
-dfs = undefined
+dfs = (\node graph -> (search f1 [node] [] graph)) 
 
 {-
     *** TODO ***

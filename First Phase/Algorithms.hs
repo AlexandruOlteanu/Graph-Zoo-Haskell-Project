@@ -155,4 +155,23 @@ countIntermediate :: Ord a
                   -> a                 -- nodul destinație
                   -> StandardGraph a   -- graful
                   -> Maybe (Int, Int)  -- numărul de noduri expandate de BFS/DFS
-countIntermediate from to graph = undefined
+countIntermediate from to graph = result
+                        where 
+                            first_list = (bfs from graph)
+                            second_list = (dfs from graph)
+                            p_first1 = (fst (span (/= to) first_list))
+                            p_first2 = (snd (span (/= to) first_list))
+                            result1 = if null p_first2 then 
+                                        -1 
+                                      else ((length p_first1) - 1)
+                            p_second1 = (fst (span (/= to) second_list))
+                            p_second2 = (snd (span (/= to) second_list))
+                            result2 = if null p_second2 then
+                                        -1
+                                      else
+                                          ((length p_second1) - 1)
+                            result = if (result1 /= -1) && (result2 /= -1) then 
+                                        Just (result1, result2)
+                                     else 
+                                         Nothing
+                            

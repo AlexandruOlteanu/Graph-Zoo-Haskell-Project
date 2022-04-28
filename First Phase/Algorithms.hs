@@ -31,63 +31,61 @@ type Graph a = StandardGraph a
     o mulțime (set) care reține nodurile vizitate până în momentul curent.
 -}
 
-f1 :: Ord a
-          => [a]                -- nodul divizat
-          -> [a]              -- nodurile cu care este înlocuit
-          -> Graph a  -- graful obținut
+function_dfs :: Ord a
+          => [a]                
+          -> [a]              
+          -> Graph a
           -> ([a], [a])
-f1 = \l1 l2 graph ->
+function_dfs = \stack final_list graph ->
             let 
-                node1 = (last l1)
-                new_l2 = (if elem node1 l2 then 
-                            l2
+                current_node = (last stack)
+                new_final_list = (if elem current_node final_list then 
+                            final_list
                           else 
-                            (l2 ++ [node1]))
-                new_l1 = (take ((length l1) - 1) l1)
-                new_l1_1 = (new_l1 ++ (foldl (\ans x -> 
-                                            if elem x l2 then 
-                                                ans  
+                            (final_list ++ [current_node]))
+                new_stack = (take ((length stack) - 1) stack) ++ (foldl (\answer x -> 
+                                            if elem x final_list then 
+                                                answer  
                                             else     
-                                                (x : ans) 
-                    ) [] (outNeighbors node1 graph)))
-            in (new_l1_1, new_l2)
+                                                (x : answer) 
+                            ) [] (outNeighbors current_node graph))
+            in (new_stack, new_final_list)
 
-f2 :: Ord a
-          => [a]                -- nodul divizat
-          -> [a]              -- nodurile cu care este înlocuit
-          -> Graph a  -- graful obținut
+function_bfs :: Ord a
+          => [a]                
+          -> [a]              
+          -> Graph a  
           -> ([a], [a])
-f2 = \l1 l2 graph ->
+function_bfs = \queue final_list graph ->
             let
-                node1 = (head l1)
-                new_l2 = (if elem node1 l2 then 
-                            l2
+                current_node = (head queue)
+                new_final_list = (if elem current_node final_list then 
+                            final_list
                           else 
-                            (l2 ++ [node1]))
-                new_l1 = (tail l1)
-                new_l1_1 = (new_l1 ++ (foldl (\ans x -> 
-                                            if elem x l2 then 
-                                                ans  
+                            (final_list ++ [current_node]))
+                new_queue = (tail queue) ++ (foldl (\answer x -> 
+                                            if elem x final_list then 
+                                                answer  
                                             else     
-                                                (ans ++ [x]) 
-                    ) [] (outNeighbors node1 graph)))
-            in (new_l1_1, new_l2)
+                                                (answer ++ [x]) 
+                                ) [] (outNeighbors current_node graph))
+            in (new_queue, new_final_list)
             
 search :: Ord a
-       => ([a] -> [a] -> Graph a -> ([a], [a]))  -- funcția de îmbinare a listelor de noduri
+       => ([a] -> [a] -> Graph a -> ([a], [a]))
        -> [a]
-       -> [a]                    -- nodul de pornire
+       -> [a]                    
        -> Graph a              -- graful
        -> [a]                  -- lista obținută în urma parcurgerii
-search f current_list final_list graph = 
+search function current_list final_list graph = 
     if null current_list then 
         final_list
     else
-        (search f new_current_list new_final_list graph)
+        (search function new_current_list new_final_list graph)
         where 
-            result = (f current_list final_list graph)
-            new_current_list = (fst result)
-            new_final_list = (snd result)
+            answer = (function current_list final_list graph)
+            new_current_list = (fst answer)
+            new_final_list = (snd answer)
 
 {-
     *** TODO ***
@@ -103,7 +101,7 @@ search f current_list final_list graph =
     [4,1,2,3]
 -}
 bfs :: Ord a => a -> Graph a -> [a]
-bfs = (\node graph -> (search f2 [node] [] graph)) 
+bfs = (\node graph -> (search function_bfs [node] [] graph)) 
 
 {-
     *** TODO ***
@@ -119,7 +117,7 @@ bfs = (\node graph -> (search f2 [node] [] graph))
     [4,1,2,3]
 -}
 dfs :: Ord a => a -> Graph a -> [a]
-dfs = (\node graph -> (search f1 [node] [] graph)) 
+dfs = (\node graph -> (search function_dfs [node] [] graph)) 
 
 {-
     *** TODO ***
@@ -155,23 +153,22 @@ countIntermediate :: Ord a
                   -> a                 -- nodul destinație
                   -> StandardGraph a   -- graful
                   -> Maybe (Int, Int)  -- numărul de noduri expandate de BFS/DFS
-countIntermediate from to graph = result
+countIntermediate from to graph = answer
                         where 
-                            first_list = (bfs from graph)
-                            second_list = (dfs from graph)
-                            p_first1 = (fst (span (/= to) first_list))
-                            p_first2 = (snd (span (/= to) first_list))
-                            result1 = if null p_first2 then 
-                                        -1 
-                                      else ((length p_first1) - 1)
-                            p_second1 = (fst (span (/= to) second_list))
-                            p_second2 = (snd (span (/= to) second_list))
-                            result2 = if null p_second2 then
+                            bfs_traverse = (bfs from graph)
+                            dfs_traverse = (dfs from graph)
+                            first_partition_bfs = (fst (span (/= to) bfs_traverse))
+                            second_partition_bfs = (snd (span (/= to) bfs_traverse))
+                            bfs_distance = if null second_partition_bfs then 
+                                        -1
+                                      else ((length first_partition_bfs) - 1)
+                            first_partition_dfs = (fst (span (/= to) dfs_traverse))
+                            second_partition_dfs = (snd (span (/= to) dfs_traverse))
+                            dfs_distance = if null second_partition_dfs then
                                         -1
                                       else
-                                          ((length p_second1) - 1)
-                            result = if (result1 /= -1) && (result2 /= -1) then 
-                                        Just (result1, result2)
+                                          ((length first_partition_dfs) - 1)
+                            answer = if (bfs_distance /= -1) && (dfs_distance /= -1) then 
+                                        Just (bfs_distance, dfs_distance)
                                      else 
                                          Nothing
-                            

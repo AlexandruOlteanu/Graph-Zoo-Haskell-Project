@@ -40,7 +40,7 @@ fromComponents ns es =
     Mulțimea nodurilor grafului.
 -}
 nodes :: StandardGraph a -> S.Set a
-nodes = \a -> (fst a)
+nodes = (\graph -> (fst graph))
 
 
 {-
@@ -49,7 +49,7 @@ nodes = \a -> (fst a)
     Mulțimea arcelor grafului.
 -}
 edges :: StandardGraph a -> S.Set (a, a)
-edges = \a -> (snd a)
+edges = (\graph -> (snd graph))
 
 {-
     Exemple de grafuri
@@ -69,6 +69,15 @@ graph4 = fromComponents [1, 2, 3, 4] [(1, 2), (1, 4), (4, 1), (2, 4), (1, 3)]
 shouldBeTrue :: Bool
 shouldBeTrue = graph1 == graph2
 
+
+extract_neighbours :: Ord a 
+                        => a
+                        -> S.Set (a, a)
+                        -> S.Set a     
+extract_neighbours wanted_node graph_edges = S.fromList (foldl (\answer pair -> (if (fst pair) == wanted_node then 
+                                                            ((snd pair) : answer)
+                                                        else answer)) [] graph_edges)
+
 {-
     *** TODO ***
 
@@ -80,9 +89,7 @@ shouldBeTrue = graph1 == graph2
     fromList [2,3,4]
 -}
 outNeighbors :: Ord a => a -> StandardGraph a -> S.Set a
-outNeighbors node graph = S.fromList (foldl (\ans x -> (if (fst x) == node then 
-                                                            ((snd x) : ans)
-                                                        else ans)) [] (edges graph))
+outNeighbors wanted_node graph = extract_neighbours wanted_node (edges graph)
 
 {-
     *** TODO ***
@@ -95,9 +102,9 @@ outNeighbors node graph = S.fromList (foldl (\ans x -> (if (fst x) == node then
     fromList [4]
 -}
 inNeighbors :: Ord a => a -> StandardGraph a -> S.Set a
-inNeighbors node graph = S.fromList (foldl (\ans x -> (if (snd x) == node then 
-                                                            ((fst x) : ans)
-                                                        else ans)) [] (edges graph))
+inNeighbors wanted_node graph = (extract_neighbours wanted_node graph_edges)
+                         where 
+                             graph_edges = S.fromList (map (\pair -> (snd pair, fst pair)) (S.toList (edges graph)))
 
 {-
     *** TODO ***
@@ -111,16 +118,20 @@ inNeighbors node graph = S.fromList (foldl (\ans x -> (if (snd x) == node then
     (fromList [2,3,4],fromList [(2,3)])
 -}
 removeNode :: Ord a => a -> StandardGraph a -> StandardGraph a
-removeNode node graph = fromComponents (foldl (\ans x -> (if x == node then 
-                                                            ans 
+removeNode wanted_node graph = (fromComponents nodes_after_removal edges_after_removal)
+                        where 
+                            nodes_after_removal = foldl (\answer current_node -> (if current_node == wanted_node then 
+                                                            answer 
                                                           else 
-                                                              (x : ans)
-                                                )) [] (nodes graph))
-                                        (foldl (\ans x -> (if ((fst x) == node || (snd x) == node) then 
-                                                            ans 
+                                                              (current_node : answer)
+                                                )) [] (nodes graph)
+                            edges_after_removal = foldl (\answer pair -> (if ((fst pair) == wanted_node 
+                                                                    || (snd pair) == wanted_node) then 
+                                                            answer 
                                                            else 
-                                                               (x : ans)
-                                                            )) [] (edges graph))
+                                                               (pair : answer)
+                                                            )) [] (edges graph)
+                            
 
 {-
     *** TODO ***
@@ -139,20 +150,20 @@ splitNode :: Ord a
           -> [a]              -- nodurile cu care este înlocuit
           -> StandardGraph a  -- graful existent
           -> StandardGraph a  -- graful obținut
-splitNode old new graph = (fromComponents new_nodes final_list_f)
-
+splitNode old new graph = (fromComponents new_nodes new_edges)
                          where
                             new_graph = removeNode old graph 
+                            edges_before_add = (S.toList (edges new_graph))
+                            edge_list_in = (map (\new_node -> 
+                                             (foldl (\answer node -> [(node, new_node)] ++ answer) [] (inNeighbors old graph))
+                                        ) new)
+                            edge_list_out = (map (\new_node -> 
+                                             (foldl (\answer node -> [(new_node, node)] ++ answer) [] (outNeighbors old graph))
+                                        ) new)
                             new_nodes = (foldl (\ans x -> (x : ans)) (S.toList (nodes new_graph)) new)
-                            new_edges = (S.toList (edges new_graph))
-                            edge_list_out = (map (\x -> 
-                                             (foldl (\res y -> [(x, y)] ++ res) [] (outNeighbors old graph))
-                                        ) new)
-                            edge_list_in = (map (\x -> 
-                                             (foldl (\res y -> [(y, x)] ++ res) [] (inNeighbors old graph))
-                                        ) new)
-                            final_list = (foldl (\ans x -> (x ++ ans)) new_edges edge_list_out)
-                            final_list_f = (foldl (\ans x -> (x ++ ans)) final_list edge_list_in)
+                            new_edges = edges_before_add ++ (foldl (\answer new_edge -> (new_edge ++ answer)) [] edge_list_out)
+                                                          ++ (foldl (\answer new_edge -> (new_edge ++ answer)) [] edge_list_in)
+                            
 {-
     *** TODO ***
 
@@ -173,12 +184,9 @@ mergeNodes :: Ord a
 mergeNodes prop node graph = (fromComponents new_nodes new_edges)
                             where 
                                 initial_nodes = (nodes graph)
-
-                                new_graph = (foldl (\ans x -> (if prop x then 
-                                                                (splitNode x [node] ans)
+                                new_graph = (foldl (\answer x -> (if prop x then 
+                                                                (splitNode x [node] answer)
                                                                else 
-                                                                ans)) graph initial_nodes)
-
+                                                                answer)) graph initial_nodes)
                                 new_edges = S.toList (edges new_graph)
-
                                 new_nodes = S.toList (nodes new_graph)

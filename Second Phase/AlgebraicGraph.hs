@@ -25,8 +25,12 @@ triangle = Connect (Node 1) (Connect (Node 2) (Node 3))
     Hint: S.union
 -}
 nodes :: Ord a => AlgebraicGraph a -> S.Set a
-nodes graph = undefined
-
+nodes graph = case graph of 
+        Empty -> (S.fromList [])
+        Node x -> (S.fromList [x])
+        Overlay x y -> (S.union (nodes x) (nodes y)) 
+        Connect x y -> (S.union (nodes x) (nodes y)) 
+        
 {-
     *** TODO ***
 
@@ -35,8 +39,11 @@ nodes graph = undefined
     Hint: S.union, S.cartesianProduct
 -}
 edges :: Ord a => AlgebraicGraph a -> S.Set (a, a)
-edges graph = undefined
-
+edges graph = case graph of 
+        Empty -> (S.fromList [])
+        Node x -> (S.fromList [])
+        Overlay x y -> (S.union (edges x) (edges y)) 
+        Connect x y -> (S.union (S.union (edges x) (edges y)) (S.cartesianProduct (nodes x) (nodes y)))
 {-
     *** TODO ***
 
@@ -46,8 +53,15 @@ edges graph = undefined
     prea multe muchii inutile.
 -}
 outNeighbors :: Ord a => a -> AlgebraicGraph a -> S.Set a
-outNeighbors node graph = undefined
-
+outNeighbors node graph = case graph of 
+        Empty -> (S.fromList [])
+        Node x -> (S.fromList [])
+        Overlay x y -> (S.union (outNeighbors node x) (outNeighbors node y))
+        Connect x y -> (
+            if elem node (S.toList (nodes x)) then
+                (S.union (S.union (outNeighbors node x) (nodes y)) (outNeighbors node y))
+            else 
+                (S.union (outNeighbors node x) (outNeighbors node y)))
 {-
     *** TODO ***
 
@@ -57,8 +71,15 @@ outNeighbors node graph = undefined
     prea multe muchii inutile.
 -}
 inNeighbors :: Ord a => a -> AlgebraicGraph a -> S.Set a
-inNeighbors node graph = undefined
-
+inNeighbors node graph = case graph of 
+        Empty -> (S.fromList [])
+        Node x -> (S.fromList [])
+        Overlay x y -> (S.union (inNeighbors node x) (inNeighbors node y))
+        Connect x y -> (
+            if elem node (S.toList (nodes y)) then
+                (S.union (S.union (inNeighbors node y) (nodes x)) (inNeighbors node x))
+            else 
+                (S.union (inNeighbors node x) (inNeighbors node y)))
 {-
     *** TODO ***
 
@@ -72,7 +93,15 @@ inNeighbors node graph = undefined
     parametrul graph se modifică.
 -}
 removeNode :: Eq a => a -> AlgebraicGraph a -> AlgebraicGraph a
-removeNode node graph = undefined
+removeNode node graph = case graph of
+        Empty -> Empty
+        Node x -> (
+            if x == node then 
+                Empty
+            else 
+                (Node x))
+        Overlay x y -> (Overlay (removeNode node x) (removeNode node y))
+        Connect x y -> (Connect (removeNode node x) (removeNode node y)) 
 
 {-
     *** TODO ***
@@ -83,12 +112,28 @@ removeNode node graph = undefined
     
     Hint: Funcție recursivă locală, ca la removeNode.
 -}
+
+create_graph :: [a] -> AlgebraicGraph a
+create_graph news = ( 
+            if null news then 
+                Empty
+            else 
+                (Overlay (create_graph (tail news)) (Node (head news))))
+
 splitNode :: Eq a
           => a                 -- nodul divizat
           -> [a]               -- nodurile cu care este înlocuit
           -> AlgebraicGraph a  -- graful existent
           -> AlgebraicGraph a  -- graful obținut
-splitNode old news graph = undefined
+splitNode old news graph = case graph of
+        Empty -> Empty
+        Node x -> (
+            if x == old then 
+                (create_graph news)
+            else 
+                (Node x))
+        Overlay x y -> (Overlay (splitNode old news x) (splitNode old news y))
+        Connect x y -> (Connect (splitNode old news x) (splitNode old news y)) 
 
 {-
     *** TODO ***
@@ -103,4 +148,12 @@ mergeNodes :: (a -> Bool)       -- proprietatea îndeplinită de nodurile îmbin
            -> a                 -- noul nod
            -> AlgebraicGraph a  -- graful existent
            -> AlgebraicGraph a  -- graful obținut
-mergeNodes prop node graph = undefined
+mergeNodes prop node graph = case graph of
+        Empty -> Empty
+        Node x -> (
+            if prop x then 
+                (create_graph [node])
+            else 
+                (Node x))
+        Overlay x y -> (Overlay (mergeNodes prop node x) (mergeNodes prop node y))
+        Connect x y -> (Connect (mergeNodes prop node x) (mergeNodes prop node y))                     

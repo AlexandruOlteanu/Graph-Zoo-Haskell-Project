@@ -30,8 +30,22 @@ type Partition a = S.Set (S.Set a)
     > mapSingle (+10) [1,2,3]
     [[11,2,3],[1,12,3],[1,2,13]]
 -}
+mapSingle_help :: (a -> a) -> [a] -> [a] -> [[a]]
+
+mapSingle_help f first_list second_list = 
+            if null second_list then
+                []
+            else 
+                let 
+                    element = (head second_list)
+                    new_element = (f element)
+                    new_first_list = (first_list ++ [element])
+                    new_second_list = (tail second_list)
+                    current_list = ((first_list ++ [new_element]) ++ new_second_list)
+                    in ([current_list] ++ (mapSingle_help f new_first_list new_second_list))
+
 mapSingle :: (a -> a) -> [a] -> [[a]]
-mapSingle f xs = undefined
+mapSingle f xs = (mapSingle_help f [] xs)
 
 {-
     *** TODO ***

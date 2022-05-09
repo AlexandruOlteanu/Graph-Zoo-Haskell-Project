@@ -103,9 +103,9 @@ inNeighbors node graph = case graph of
     Connect (Node 1) (Overlay (Node 2) (Node 3))
 -}
 instance Num a => Num (AlgebraicGraph a) where
-    fromInteger = undefined
-    (+) = undefined
-    (*) = undefined
+    fromInteger = (\x -> (Node (fromIntegral x)))
+    (+) = Overlay
+    (*) = Connect
 
 {-
     *** TODO ***
@@ -124,7 +124,11 @@ instance Num a => Num (AlgebraicGraph a) where
     (1*(2+3))
 -}
 instance Show a => Show (AlgebraicGraph a) where
-    show graph = undefined
+    show graph = case graph of 
+                 Empty -> ""
+                 Node x -> show x
+                 Overlay x y -> "(" ++ (show x) ++ "+" ++ (show y) ++ ")"  
+                 Connect x y -> "(" ++ (show x) ++ "*" ++ (show y) ++ ")"
 
 {-
     *** TODO ***
@@ -151,7 +155,7 @@ instance Show a => Show (AlgebraicGraph a) where
     True
 -}
 instance Ord a => Eq (AlgebraicGraph a) where
-    g1 == g2 = undefined
+    g1 == g2 = ((nodes g1) == (nodes g2) && (edges g1) == (edges g2))
 
 {-
     *** TODO ***
@@ -167,8 +171,11 @@ instance Ord a => Eq (AlgebraicGraph a) where
     ((4+5)*(2+3))
 -}
 extend :: (a -> AlgebraicGraph b) -> AlgebraicGraph a -> AlgebraicGraph b
-extend f graph = undefined
-
+extend f graph = case graph of 
+               Empty -> Empty 
+               Node x -> (f x)
+               Overlay x y -> Overlay (extend f x) (extend f y)
+               Connect x y -> Connect (extend f x) (extend f y)
 {-
     *** TODO ***
 
@@ -178,12 +185,29 @@ extend f graph = undefined
     
     Implementați splitNode folosind extend!
 -}
+
+
+func :: Eq a
+        => a
+        -> a
+        -> [a]
+        -> AlgebraicGraph a
+
+func x node targets = if x /= node then 
+                        (Node x)
+                      else 
+                          (if null targets then 
+                              Empty
+                           else  
+                               Overlay (Node (head targets)) (func x node (tail targets))                                
+                          ) 
+
 splitNode :: Eq a
           => a                 -- nodul divizat
           -> [a]               -- nodurile cu care este înlocuit
           -> AlgebraicGraph a  -- graful existent
           -> AlgebraicGraph a  -- graful obținut
-splitNode node targets = undefined
+splitNode node targets = (\graph -> (extend (\x -> (func x node targets)) graph)) 
 
 {-
     *** TODO ***

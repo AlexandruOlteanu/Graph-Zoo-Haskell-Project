@@ -225,8 +225,11 @@ splitNode node targets = (\graph -> (extend (\x -> (func x node targets)) graph)
 -}
 instance Functor AlgebraicGraph where
     -- fmap :: (a -> b) -> AlgebraicGraph a -> AlgebraicGraph b
-    fmap f graph = undefined
-
+    fmap f graph = case graph of 
+            Empty -> Empty
+            Node x -> (extend (\x -> Node (f x)) (Node x))
+            Overlay x y -> Overlay (fmap f x) (fmap f y)
+            Connect x y ->  Connect (fmap f x) (fmap f y)
 {-
     *** TODO ***
 
@@ -240,7 +243,10 @@ mergeNodes :: (a -> Bool)       -- proprietatea îndeplinită de nodurile îmbin
            -> a                 -- noul nod
            -> AlgebraicGraph a  -- graful existent
            -> AlgebraicGraph a  -- graful obținut
-mergeNodes prop node = undefined
+mergeNodes prop node = (\graph -> (fmap (\x -> (if prop x then 
+                                        node 
+                                    else 
+                                        x)) graph))
 
 {-
     *** TODO ***
@@ -258,7 +264,15 @@ mergeNodes prop node = undefined
     fromList [(1,3)]
 -}
 filterGraph :: (a -> Bool) -> AlgebraicGraph a -> AlgebraicGraph a
-filterGraph prop graph = undefined
+filterGraph prop graph = case graph of 
+                Empty -> Empty
+                Node x -> (extend (\x -> if prop x then
+                                            (Node x)
+                                         else 
+                                            Empty
+                    ) (Node x))
+                Overlay x y -> Overlay (filterGraph prop x) (filterGraph prop y) 
+                Connect x y -> Connect (filterGraph prop x) (filterGraph prop y)
 
 {-
     *** TODO ***
@@ -269,4 +283,7 @@ filterGraph prop graph = undefined
     Implementați removeNode folosind filterGraph!
 -}
 removeNode :: Eq a => a -> AlgebraicGraph a -> AlgebraicGraph a
-removeNode node graph = undefined
+removeNode node graph = filterGraph (\x -> (if x /= node then 
+                                             True 
+                                            else 
+                                                False)) graph

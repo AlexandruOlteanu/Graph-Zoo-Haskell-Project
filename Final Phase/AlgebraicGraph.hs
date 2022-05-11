@@ -103,7 +103,7 @@ inNeighbors node graph = case graph of
     Connect (Node 1) (Overlay (Node 2) (Node 3))
 -}
 instance Num a => Num (AlgebraicGraph a) where
-    fromInteger = (\x -> (Node (fromIntegral x)))
+    fromInteger = (\number -> (Node (fromInteger number)))
     (+) = Overlay
     (*) = Connect
 
@@ -127,8 +127,8 @@ instance Show a => Show (AlgebraicGraph a) where
     show graph = case graph of 
                  Empty -> ""
                  Node x -> show x
-                 Overlay x y -> "(" ++ (show x) ++ "+" ++ (show y) ++ ")"  
-                 Connect x y -> "(" ++ (show x) ++ "*" ++ (show y) ++ ")"
+                 Overlay x y -> '(' : (show x) ++ "+" ++ (show y) ++ ")"  
+                 Connect x y -> '(' : (show x) ++ "*" ++ (show y) ++ ")"
 
 {-
     *** TODO ***
@@ -155,7 +155,15 @@ instance Show a => Show (AlgebraicGraph a) where
     True
 -}
 instance Ord a => Eq (AlgebraicGraph a) where
-    g1 == g2 = ((nodes g1) == (nodes g2) && (edges g1) == (edges g2))
+    g1 == g2 = check where
+            nodes_list_g1 = (nodes g1)
+            nodes_list_g2 = (nodes g2)
+            edges_list_g1 = (edges g1)
+            edges_list_g2 = (edges g2)
+            check = if nodes_list_g1 == nodes_list_g2 && edges_list_g1 == edges_list_g2 then
+                        True
+                    else 
+                        False
 
 {-
     *** TODO ***

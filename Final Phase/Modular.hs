@@ -136,7 +136,7 @@ check_help initial_list list in_list out_list graph =
                       (check_help initial_list (tail list) in_list out_list graph)
                     else 
                         False
-                        
+
 isModule :: Ord a
          => S.Set a
          -> Graph a
@@ -184,7 +184,14 @@ isModularPartition :: Ord a
                    => Partition a
                    -> Graph a
                    -> Bool
-isModularPartition partition graph = undefined
+isModularPartition partition graph = 
+        if null (S.toList (partition)) then 
+            True
+        else 
+            if isModule (head $ S.toList partition) graph then
+                    (isModularPartition (S.fromList $ tail $ S.toList partition) graph)
+            else 
+                False
 
 {-
     *** TODO ***

@@ -32,8 +32,22 @@ type Partition a = S.Set (S.Set a)
     > mapSingle (+ 10) [1,2,3]
     [[11,2,3],[1,12,3],[1,2,13]]
 -}
+mapSingle_help :: (a -> a) -> [a] -> [a] -> [[a]]
+
+mapSingle_help f first_list second_list = 
+            if null second_list then
+                []
+            else 
+                let 
+                    element = (head second_list)
+                    new_element = (f element)
+                    new_first_list = (first_list ++ [element])
+                    new_second_list = (tail second_list)
+                    current_list = ((first_list ++ [new_element]) ++ new_second_list)
+                    in ([current_list] ++ (mapSingle_help f new_first_list new_second_list))
+
 mapSingle :: (a -> a) -> [a] -> [[a]]
-mapSingle f xs = undefined
+mapSingle f xs = (mapSingle_help f [] xs)
 
 {-
     *** TODO ***
@@ -92,12 +106,47 @@ partitions xs = undefined
     > isModule (S.fromList [1,3]) diagram
     False
 -}
+
+isModule_help :: Ord a
+                => [a]
+                -> a
+                -> AlgebraicGraph a
+                -> ([a], [a])
+
+isModule_help list element graph = (x, y) where
+    x = S.toList (S.filter (\x -> (not (elem x list))) (inNeighbors element graph))
+    y = S.toList (S.filter (\x -> (not (elem x list))) (outNeighbors element graph))
+
+
+check_help :: Ord a
+              => [a]
+              -> [a]
+              -> [a]
+              -> [a]
+              -> AlgebraicGraph a
+              -> Bool
+
+check_help initial_list list in_list out_list graph = 
+        if null list then 
+            True
+        else check where
+            x = (fst (isModule_help initial_list (head list) graph))
+            y = (snd (isModule_help initial_list (head list) graph))
+            check = if x == in_list && y == out_list then 
+                      (check_help initial_list (tail list) in_list out_list graph)
+                    else 
+                        False
+                        
 isModule :: Ord a
          => S.Set a
          -> Graph a
          -> Bool
-isModule set graph = undefined
-
+isModule set graph = check where 
+        list = (S.toList set)
+        first_element = (head list)
+        in_list = (fst (isModule_help list first_element graph))
+        out_list = (snd (isModule_help list first_element graph))
+        check = check_help list list in_list out_list graph
 {-
     *** TODO ***
 
